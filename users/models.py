@@ -1,8 +1,11 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 
-class User(models.Model):
+class User(AbstractUser):
+    username = None
+
     phone = models.CharField(
         max_length=11,
         unique=True,
@@ -27,23 +30,26 @@ class User(models.Model):
         verbose_name='Активированный инвайт-код'
     )
 
-    is_authenticated = models.BooleanField(
-        default=False
+    date_joined = models.DateTimeField(
+        default=timezone.now,
+        blank=True,
+        null=True,
     )
 
-    auth_code = models.CharField(
-        max_length=4,
+    password = models.CharField(
         blank=False,
         null=False,
         verbose_name='Код авторизации'
     )
 
-    auth_code_created_at = models.DateTimeField(
-        auto_now_add=True,
-        editable=False,
+    password_created_on = models.DateTimeField(
+        auto_now=False,
         blank=True,
         verbose_name='Код авторизации создан'
     )
+
+    USERNAME_FIELD = "phone"
+    REQUIRED_FIELDS = []
 
     def __str__(self):
         return (
