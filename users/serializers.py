@@ -1,9 +1,12 @@
 from datetime import datetime
 
+from django.conf import settings
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainSerializer
+from rest_framework_simplejwt.tokens import AccessToken
 
-from config.validators import PhoneNumberValidator
+from config.validators import PhoneNumberValidator, TokenLifeValidator
 from users.models import User
 from users.service.code_generators import generate_invite_code, generate_auth_code
 
@@ -23,7 +26,6 @@ class UserCreateSerializer(serializers.ModelSerializer):
         write_only=True
     )
     auth_code_created_at = serializers.HiddenField(default=datetime.now(), write_only=True)
-    id = serializers.IntegerField
 
     class Meta:
         model = User
@@ -38,7 +40,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
         validators = [
             PhoneNumberValidator(field='phone'),
-
+            # TokenLifeValidator(field='auth_code_created_at')
         ]
 
     def create(self, validated_data):
@@ -54,36 +56,47 @@ class UserCreateSerializer(serializers.ModelSerializer):
         if not queryset.exists():
             user = User.objects.create(
                 phone=phone,
-                auth_code=auth_code
+                auth_code=auth_code,
+                auth_code_created_at=timezone.now()
             )
             send_auth_code(auth_code)
+            user.set_password(auth_code)
             user.save()
-        for item in queryset:
-            try:
-                auth_code = validated_data['auth_code']
-                # Проверка введенного кода.
-                # Если пользователь не проходил аутентификацию прежде -
-                # генерируется invite code.
-                if auth_code == item.auth_code and not item.is_authenticated:
-                    queryset.update(
-                        phone=phone,
-                        invite_code=invite_code,
-                        is_authenticated=True
-                    )
-                    validated_data['id'] = item.pk
+        else:
+            user_obj = User.objects.get(phone=phone)
+            # Получение объекта пользователя из базы для передачи в метод создания токена
+            access_token = AccessToken.for_user(user_obj)
 
-                # Проверка введенного кода.
-                # Если пользователь уже проходил аутентификацию -
-                # в базу никакие изменения не вносятся.
-                elif auth_code == item.auth_code and item.is_authenticated:
+            for item in queryset:
+                try:
+                    auth_code = validated_data['auth_code']
+
+                    # Проверка введенного кода.
+                    # Если пользователь не проходил аутентификацию прежде -
+                    # генерируется invite code.
+                    if auth_code == item.auth_code and not item.is_authenticated:
+                        queryset.update(
+                            invite_code=invite_code,
+                            is_authenticated=True
+                        )
+                        validated_data['access_token'] = access_token
+
+                    # Проверка введенного кода.
+                    # Если пользователь уже проходил аутентификацию -
+                    # в базу никакие изменения не вносятся.
+                    elif auth_code == item.auth_code and item.is_authenticated:
+                        # item.update(
+                        #     phone=phone
+                        # )
+                        validated_data['access_token'] = access_token
+
+                    else:
+                        raise serializers.ValidationError('Authentication code is not valid')
+                except KeyError:
+                    send_auth_code(auth_code)
                     queryset.update(
-                        phone=phone
+                        auth_code=auth_code,
+                        auth_code_created_at=timezone.now()
                     )
-                else:
-                    raise serializers.ValidationError('Authorization code is not valid')
-            except KeyError:
-                send_auth_code(auth_code)
-                User.objects.update(
-                    auth_code=auth_code
-                )
         return validated_data
+
