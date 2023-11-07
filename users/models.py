@@ -38,7 +38,7 @@ class User(AbstractUser):
 
     password = models.CharField(
         blank=False,
-        null=False,
+        null=True,
         verbose_name='Код авторизации'
     )
 
