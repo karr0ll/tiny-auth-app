@@ -1,5 +1,7 @@
+from datetime import datetime, timedelta
 from typing import OrderedDict
 
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 
@@ -27,6 +29,22 @@ class PhoneNumberValidator:
             raise ValidationError(
                 "Only mobile phone numbers supported"
             )
+
+
+class TokenLifeValidator:
+
+    def __init__(self, field: str) -> None:
+        self.field: str = field
+
+    def __call__(self, request_data: OrderedDict[str, datetime]) -> None:
+        auth_code_created_at: datetime = request_data.get(self.field)
+        token_life_time = auth_code_created_at + timedelta(minutes=3)
+        if token_life_time < timezone.now():
+            raise ValidationError(
+                "Token expired"
+            )
+
+
 
 
 
