@@ -22,7 +22,10 @@ class UserCreateSerializer(serializers.ModelSerializer):
         required=False,
         write_only=True
     )
-    password_created_on = serializers.HiddenField(default=datetime.now(), write_only=True)
+    password_created_on = serializers.HiddenField(
+        default=datetime.now(),
+        write_only=True
+    )
 
     class Meta:
         model = User
@@ -51,7 +54,6 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
         queryset = User.objects.filter(phone=phone)
         if not queryset.exists():
-            print('срабатывает if not queryset.exists()')
             user = User.objects.create(
                 phone=phone,
                 date_joined=None,
@@ -70,19 +72,18 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
                     # Передача в метод создания токена объекта пользователя
 
-                    access_token = AccessToken.for_user(user_obj)
+                    access_token = str(AccessToken.for_user(user_obj))
 
                     # Проверка введенного кода.
                     # Если пользователь не проходил аутентификацию прежде -
                     # генерируется invite code.
 
                     if user_obj.last_login is None:
-                        print('срабатывает user_obj.last_login is None')
-
                         user_obj.invite_code = invite_code
                         user_obj.date_joined = timezone.now()
                         user_obj.last_login = timezone.now()
                         user_obj.is_active = True
+                        # user_obj.password = None #TODO: нужно ли делать что-то с паролем после успешной аутентификации?
                         user_obj.save()
                         validated_data['access_token'] = access_token
 
@@ -92,6 +93,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
                     else:
                         user_obj.last_login = timezone.now()
+                        # user_obj.password = None #TODO: нужно ли делать что-то с паролем после успешной аутентификации?
                         user_obj.save()
                         validated_data['access_token'] = access_token
                 else:
@@ -99,11 +101,12 @@ class UserCreateSerializer(serializers.ModelSerializer):
             except KeyError:
 
                 # Отправка кода аутентификации существующему пользователю
+
                 user_obj = User.objects.get(phone=phone)
                 send_auth_code(auth_code)
                 user_obj.set_password(auth_code)
                 user_obj.password_created_on = timezone.now()
                 user_obj.save()
-
+        # print(validated_data)
         return validated_data
 
