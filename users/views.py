@@ -1,8 +1,11 @@
 from rest_framework import status
-from rest_framework.generics import CreateAPIView
+from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from users.serializers import UserCreateSerializer
+from users.models import User
+from users.permissions import IsUser
+from users.serializers import UserCreateSerializer, UserProfileSerializer
 
 
 class UserCreateView(CreateAPIView):
@@ -10,7 +13,7 @@ class UserCreateView(CreateAPIView):
     Контроллер регистрации или авторизации пользователя
     """
     serializer_class = UserCreateSerializer
-
+    permission_classes = [AllowAny]
 
     # def create(self, request, *args, **kwargs):
     #     # serializer = self.get_serializer(data=request.data)
@@ -34,4 +37,13 @@ class UserCreateView(CreateAPIView):
     #                     'user_id': f"{uid}"
     #                 }, status.HTTP_200_OK
     #             )
+
+
+class UserProfileView(RetrieveUpdateAPIView):
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated, IsUser]
+
+    def get_queryset(self):
+        queryset = User.objects.filter(pk=self.request.user.pk)
+        return queryset
 
