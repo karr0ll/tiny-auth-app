@@ -27,21 +27,9 @@ class UserCreateSerializer(serializers.ModelSerializer):
         write_only=True
     )
 
-    class Meta:
-        model = User
-
-        fields = (
-            'phone',
-            'invite_code',
-            'password',
-            'password_created_on',
-        )
-
-        validators = [
-            PhoneNumberValidator(field='phone'),
-            # TokenLifeValidator(field='auth_code_created_at'),
-            # PasswordValidator(field='password'),
-        ]
+    access_token = serializers.SerializerMethodField(
+        read_only=True
+    )
 
     def create(self, validated_data):
         phone = validated_data['phone']
@@ -85,7 +73,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
                         user_obj.is_active = True
                         # user_obj.password = None #TODO: нужно ли делать что-то с паролем после успешной аутентификации?
                         user_obj.save()
-                        validated_data['access_token'] = access_token
+                        validated_data.update(access_token=access_token)
 
                     # Проверка введенного кода.
                     # Если пользователь уже проходил аутентификацию -
@@ -95,7 +83,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
                         user_obj.last_login = timezone.now()
                         # user_obj.password = None #TODO: нужно ли делать что-то с паролем после успешной аутентификации?
                         user_obj.save()
-                        validated_data['access_token'] = access_token
+                        validated_data.update(access_token=access_token)
                 else:
                     raise serializers.ValidationError('Authentication code is not valid')
             except KeyError:
@@ -107,6 +95,92 @@ class UserCreateSerializer(serializers.ModelSerializer):
                 user_obj.set_password(auth_code)
                 user_obj.password_created_on = timezone.now()
                 user_obj.save()
-        # print(validated_data)
+        print(validated_data)
         return validated_data
 
+    def get_access_token(self, instance):
+        print(self.validated_data)
+        try:
+            access_token = self.validated_data['access_token']
+            return access_token
+        except KeyError:
+            pass
+
+
+    class Meta:
+        model = User
+
+        fields = (
+            'phone',
+            'invite_code',
+            'password',
+            'password_created_on',
+            'access_token'
+        )
+
+        validators = [
+            PhoneNumberValidator(field='phone'),
+            # TokenLifeValidator(field='auth_code_created_at'),
+            # PasswordValidator(field='password'),
+        ]
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    phone = serializers.CharField(max_length=16)
+    invite_code = serializers.CharField(
+        max_length=6,
+        required=False,
+        read_only=True
+    )
+    activated_invite_code = serializers.CharField(
+        max_length=6,
+        required=False
+    )
+
+    invited_users = serializers.SerializerMethodField(read_only=True)
+
+    def get_invited_users(self, instance):
+        invited_users_queryset = User.objects.filter(invite_code=instance.invite_code)
+        invited_users = []
+        for user in invited_users_queryset:
+            if instance.pk != user.pk:
+                invited_users.append(
+                    {
+                        'id': user.id,
+                        'phone': user.phone
+                    }
+                )
+        if len(invited_users) == 0:
+            return None
+        else:
+            return invited_users
+
+    def update(self, instance, validated_data):
+        activate_invite_code = validated_data['activated_invite_code']
+        if all(
+                [
+                    (User.objects.filter(invite_code=activate_invite_code).exists()),
+                    (instance.activated_invite_code is None),
+                    (activate_invite_code != instance.invite_code)
+                ]
+        ):
+            instance.activated_invite_code = activate_invite_code
+            instance.save()
+            return instance
+        else:
+            if not User.objects.filter(invite_code=activate_invite_code).exists():
+                raise serializers.ValidationError({'error_message': "Invite code not found"})
+            if instance.activated_invite_code is None:
+                raise serializers.ValidationError({'error_message': "Invite code has been activated"})
+            if activate_invite_code == instance.invite_code:
+                raise serializers.ValidationError({'error_message': "User's own invite code can't be activated"})
+
+    class Meta:
+        model = User
+
+        fields = (
+            'phone',
+            'invite_code',
+            'activated_invite_code',
+            'invited_users'
+        )
