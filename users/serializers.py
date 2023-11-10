@@ -1,10 +1,10 @@
-from datetime import datetime
+import datetime
 
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken
 
-from config.validators import PhoneNumberValidator
+from config.validators import PhoneNumberValidator, AuthCodeLifeValidator, PasswordValidator
 from users.models import User
 from users.service.code_generators import (generate_invite_code,
                                            generate_auth_code)
@@ -23,7 +23,7 @@ class UserRequestCodeSerializer(serializers.ModelSerializer):
         write_only=True
     )
     password_created_on = serializers.HiddenField(
-        default=datetime.now(),
+        default=timezone.now(),
         write_only=True
     )
 
@@ -60,8 +60,6 @@ class UserRequestCodeSerializer(serializers.ModelSerializer):
         )
         validators = [
             PhoneNumberValidator(field='phone'),
-            # TokenLifeValidator(field='auth_code_created_at'),
-            # PasswordValidator(field='password'),
         ]
 
 
@@ -101,21 +99,17 @@ class UserAuthSerializer(serializers.ModelSerializer):
                 user.date_joined = timezone.now()
                 user.last_login = timezone.now()
                 user.is_active = True
-                # user_obj.password = None #TODO: нужно ли делать что-то с паролем после успешной аутентификации?
                 user.save()
-                validated_data.update(access_token=access_token)
 
             # Проверка введенного кода.
             # Если пользователь уже проходил аутентификацию -
             # в базу никакие изменения не вносятся.
             else:
                 user.last_login = timezone.now()
-                # user_obj.password = None #TODO: нужно ли делать что-то с паролем после успешной аутентификации?
                 user.save()
-                validated_data.update(access_token=access_token)
         else:
             raise serializers.ValidationError(
-                'Authentication code is not valid'
+                'authentication code is not valid'
             )
         return user
 
@@ -127,18 +121,19 @@ class UserAuthSerializer(serializers.ModelSerializer):
         else:
             return None
 
+
     class Meta:
         model = User
         fields = (
             'phone',
             'password',
             'invite_code',
-            'access_token'
+            'access_token',
         )
         validators = [
             PhoneNumberValidator(field='phone'),
-            # TokenLifeValidator(field='auth_code_created_at'),
-            # PasswordValidator(field='password'),
+            AuthCodeLifeValidator(field='phone'),
+            PasswordValidator(field='password'),
         ]
 
 
@@ -181,6 +176,9 @@ class UserRetrieveProfileSerializer(serializers.ModelSerializer):
             'activated_invite_code',
             'invited_users'
         )
+        validators = [
+            PhoneNumberValidator(field='phone')
+        ]
 
 
 class UserActivateInviteCodeSerializer(serializers.ModelSerializer):
@@ -217,7 +215,7 @@ class UserActivateInviteCodeSerializer(serializers.ModelSerializer):
                 if instance.activated_invite_code is not None:
                     raise serializers.ValidationError(
                         {
-                            'error_message': "user has activated invite code"
+                            'error_message': "user has already activated invite code"
                         }
                     )
                 if activate_invite_code == instance.invite_code:
