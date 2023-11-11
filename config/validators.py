@@ -4,7 +4,7 @@ from typing import OrderedDict
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
-from users.models import User
+from api.models import User
 
 
 class PhoneNumberValidator:

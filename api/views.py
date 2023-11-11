@@ -1,11 +1,17 @@
 from rest_framework import status
-from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView, UpdateAPIView, RetrieveAPIView
+from rest_framework.generics import (CreateAPIView,
+                                     RetrieveUpdateAPIView,
+                                     UpdateAPIView
+                                     )
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from users.models import User
-from users.serializers import UserRequestCodeSerializer, UserAuthSerializer, UserRetrieveProfileSerializer, \
-    UserActivateInviteCodeSerializer
+from api.models import User
+from api.serializers import (UserRequestCodeSerializer,
+                               UserAuthSerializer,
+                               UserRetrieveProfileSerializer,
+                               UserActivateInviteCodeSerializer
+                               )
 
 
 class UserRequestCodeView(CreateAPIView):
@@ -22,13 +28,17 @@ class UserRequestCodeView(CreateAPIView):
         instance = serializer.save()
         return Response(
                 {
-                    'message': f"Verification code sent",
+                    'message': 'verification code sent',
                     'user_id': instance.id
                 }, status.HTTP_201_CREATED
             )
 
 
 class UserAuthView(UpdateAPIView):
+    """
+    View for obtaining authorization code and
+    sending back access token
+    """
     serializer_class = UserAuthSerializer
     permission_classes = [AllowAny]
 
@@ -40,19 +50,25 @@ class UserAuthView(UpdateAPIView):
     def patch(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', None)
         user = self.get_object()
-        serializer = self.get_serializer(user, data=request.data, partial=partial)
+        serializer = self.get_serializer(
+            user, data=request.data, partial=partial
+        )
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         access_token = serializer.data.get('access_token', None)
         return Response(
             {
-                'message': f"user authenticated",
+                'message': 'user authenticated',
                 'access_token': access_token
             }, status.HTTP_200_OK
         )
 
 
 class UserProfileView(RetrieveUpdateAPIView):
+    """
+    View for retrieving api profile and
+    activate other user's invite code
+    """
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
