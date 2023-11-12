@@ -31,7 +31,7 @@ class User(AbstractUser):
     )
 
     date_joined = models.DateTimeField(
-        default=timezone.now(),
+        default=timezone.now,
         blank=True,
         null=True,
     )
@@ -43,7 +43,7 @@ class User(AbstractUser):
     )
 
     password_created_on = models.DateTimeField(
-        default=timezone.now(),
+        default=timezone.now,
         blank=True,
         null=True,
         verbose_name='Код авторизации создан'
