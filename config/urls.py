@@ -17,8 +17,7 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path('', include('app_interface.urls', namespace='app_interface')),
-    path('docs/',
+    path('',
          schema_view.with_ui(
              'redoc',
              cache_timeout=0
