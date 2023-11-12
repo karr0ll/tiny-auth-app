@@ -1,0 +1,61 @@
+version: '3'
+
+services:
+  django:
+    build:
+      context: .
+    tty: true
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - static:/app/static
+      - media:/app/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '8000:8000'
+    command: bash -c "python manage.py collectstatic --no-input &&
+                    python manage.py makemigrations &&
+                    python manage.py migrate &&
+                    gunicorn --workers=4 --reload --max-requests=1000 backend.wsgi -b 0.0.0.0:8000""
+
+  nginx:
+    container_name: nginx
+    working_dir: /app
+    image: nginx:latest
+    restart: always
+    ports:
+      - '80:80'
+    volumes:
+      - static:/app/static
+      - media:/app/media
+      - .:/etc/nginx/conf.d:ro
+    links:
+      - django
+    depends_on:
+      - django
+
+    command:
+      - bash -c "ln -s /etc/nginx/sites-available/my_site /etc/nginx/sites-enabled"
+
+  db:
+    image: postgres:latest
+    restart: always
+    env_file:
+      - .env
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+
+volumes:
+  pgdata:
+  static:
+  media:
