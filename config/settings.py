@@ -36,7 +36,7 @@ ALLOWED_HOSTS = [
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
-    os.environ.get('ALLOWED_HOSTS')
+    'https://' + os.environ.get('ALLOWED_HOSTS'),
 ]
 
 CORS_ALLOW_METHODS = (
