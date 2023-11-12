@@ -8,6 +8,6 @@ class IsUser(BasePermission):
     }
 
     def has_object_permission(self, request, view, obj):
-        if request.user.phone == obj.user.phone:
+        if request.user.phone == obj.phone:
             return True
         return False, self.message
