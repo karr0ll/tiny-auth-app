@@ -40,7 +40,7 @@ services:
     command:
       - bash -c "ln -s /etc/nginx/sites-available/my_site /etc/nginx/sites-enabled"
 
-  db:
+  postgres:
     image: postgres:latest
     restart: always
     env_file:
