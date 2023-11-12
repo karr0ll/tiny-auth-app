@@ -32,7 +32,8 @@ DEBUG = os.environ.get('DEBUG')
 
 ALLOWED_HOSTS = [
     os.environ.get('ALLOWED_HOSTS'),
-    '127.0.0.1'
+    '127.0.0.1',
+    'localhost'
 ]
 
 # CORS settings
@@ -65,7 +66,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework_simplejwt',
 
-    'api'
+    'api',
+    'app_interface'
 ]
 
 MIDDLEWARE = [
@@ -79,7 +81,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
 
 ROOT_URLCONF = 'config.urls'
 
@@ -143,13 +144,24 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
+STATICFILES_DIRS = (
+    BASE_DIR / 'static',
+)
+
 STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'static/'
+
+MEDIA_URL = '/media/'
+
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'api.User'
+
+LOGIN_REDIRECT_URL = 'index'
+
+LOGOUT_REDIRECT_URL = '/'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [

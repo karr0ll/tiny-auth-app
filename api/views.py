@@ -1,3 +1,4 @@
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.generics import (CreateAPIView,
                                      RetrieveUpdateAPIView,
@@ -16,7 +17,7 @@ from api.serializers import (UserRequestCodeSerializer,
 
 class UserRequestCodeView(CreateAPIView):
     """
-    View for user registration and auth code request or
+    Endpoint for user registration and auth code request (if user is not registered) or
     auth code request if user is registered
     """
     serializer_class = UserRequestCodeSerializer
@@ -36,7 +37,7 @@ class UserRequestCodeView(CreateAPIView):
 
 class UserAuthView(UpdateAPIView):
     """
-    View for obtaining authorization code and
+    Endpoint for verification of authorization code and
     sending back access token
     """
     serializer_class = UserAuthSerializer
@@ -66,10 +67,10 @@ class UserAuthView(UpdateAPIView):
 
 class UserProfileView(RetrieveUpdateAPIView):
     """
-    View for retrieving api profile and
+    Endpoint for retrieving user profile and
     activate other user's invite code
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsUser]
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
