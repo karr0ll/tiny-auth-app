@@ -43,7 +43,6 @@ class User(AbstractUser):
     )
 
     password_created_on = models.DateTimeField(
-        default=timezone.now,
         blank=True,
         null=True,
         verbose_name='Код авторизации создан'
