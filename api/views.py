@@ -9,10 +9,10 @@ from rest_framework.response import Response
 from api.models import User
 from api.permissions import IsUser
 from api.serializers import (UserRequestCodeSerializer,
-                               UserAuthSerializer,
-                               UserRetrieveProfileSerializer,
-                               UserActivateInviteCodeSerializer
-                               )
+                             UserAuthSerializer,
+                             UserRetrieveProfileSerializer,
+                             UserActivateInviteCodeSerializer
+                             )
 
 
 class UserRequestCodeView(CreateAPIView):
@@ -75,7 +75,8 @@ class UserProfileView(RetrieveUpdateAPIView):
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return UserRetrieveProfileSerializer
-        else:
+
+        if self.request.method == 'PATCH':
             return UserActivateInviteCodeSerializer
 
     def get_queryset(self):
