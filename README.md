@@ -40,7 +40,7 @@ API микросервиса реферальной системы.
 ## Установка
 ***
 1. Клонируйте репозиторий 
-git clone https://github.com/karr0ll/tiny-auth-app.git
+> git clone https://github.com/karr0ll/tiny-auth-app.git
 
 2. Установите зависимости проекта
 > pip install -r requirements.txt
