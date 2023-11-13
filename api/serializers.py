@@ -31,7 +31,7 @@ class UserRequestCodeSerializer(serializers.ModelSerializer):
         write_only=True
     )
     password_created_on: datetime.datetime = serializers.HiddenField(
-        default=timezone.now(),
+        default=timezone.now,
         write_only=True
     )
     id: int = serializers.IntegerField(read_only=True)

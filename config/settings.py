@@ -32,11 +32,12 @@ DEBUG = os.environ.get('DEBUG')
 
 ALLOWED_HOSTS = [
     os.environ.get('ALLOWED_HOSTS'),
+    '127.0.0.1'
 ]
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
-    os.environ.get('ALLOWED_HOSTS')
+    'https://' + os.environ.get('ALLOWED_HOSTS'),
 ]
 
 CORS_ALLOW_METHODS = (
